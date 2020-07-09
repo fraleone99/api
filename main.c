@@ -26,7 +26,7 @@ int main() {
     char command[8];
     gets(command);
     if(type_of_command(commmand) == 0){
-
+        int ind1 = atoi(strtok(command , ','))
     }
     else if(type_of_command(commmand) == 1){
 
