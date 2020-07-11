@@ -20,24 +20,31 @@ typedef struct commands {
 typedef struct undo_commands{
     int n;
     char action;
-}u_r; //comandi u r
+}u_r_command; //comandi u r
 
 c_d_p_command interpreta_comando1(char* command);
+u_r_command interpreta_comando2(char* command);
 int type_of_command(char* command);
 
 int main() {
-    char command[11];
-    gets(command);
+    char command[12];
+    int command_size = 12;
+    fgets(command, command_size, stdin);
+    while(command[0] != 'q') {
+        if (type_of_command(command) == 1) {
+            c_d_p_command comandx = interpreta_comando1(command);
+            printf("\nIl comando inserito è:\n");
+            printf("ind1: %d\n", comandx.ind1);
+            printf("ind2: %d\n", comandx.ind2);
+            printf("azione: %c\n", comandx.action);
+        } else if (type_of_command(command) == 0) {
+            u_r_command comandy = interpreta_comando2(command);
+            printf("\nIl comando inserito è:\n");
+            printf("n: %d\n", comandy.n);
+            printf("azione: %c\n", comandy.action);
 
-    //if(type_of_command(commmand) == 0){
-
-    //}
-    if(type_of_command(command) == 1){
-        c_d_p_command comandox = interpreta_comando1(command);
-        printf("\nIl comando inserito è:\n");
-        printf("ind1: %d\n", comandox.ind1);
-        printf("ind2: %d\n", comandox.ind2);
-        printf("azione: %c\n", comandox.action);
+        }
+        fgets(command, command_size, stdin);
     }
 
     return  0;
@@ -64,10 +71,20 @@ c_d_p_command interpreta_comando1(char* command){ //interpreta comandi c,d,p
 
     //ind 2 e tipo di comando
     token = strtok(NULL, ",");
-    current_command.action = token[strlen(token)-1];
+    current_command.action = token[strlen(token)-2];
     char str2[5];
     strncpy(str2, token, strlen(token)-1);
     current_command.ind2 = atoi(str2);
+
+    return current_command;
+}
+
+u_r_command interpreta_comando2(char* command){
+    u_r_command current_command;
+    char str[4];
+    strncpy(str, command, strlen(command)-1);
+    current_command.n = atoi(str);
+    current_command.action = command[strlen(command)-2];
 
     return current_command;
 }
