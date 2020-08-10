@@ -139,9 +139,16 @@ void insertFirst(c_d_p_command command){
         displayForward_undo();
     }
     //create a link
+
+
     struct ur_node *link = (struct ur_node*) malloc(sizeof(struct ur_node));
     link->command = command;
-
+    if(command.action == 'd'){
+        if(command.ind1 > last->ind)
+            return;
+        if(command.ind2 >last->ind)
+            link->command.ind2 = last->ind;
+    }
     if(undo_head == NULL)
         undo_last = link;
     else {
@@ -211,7 +218,8 @@ void insertLast_redoNode(char* str){
     printf("entro in insertLast_redoNode\n");
     //displayForward_redo();
     struct node* link = malloc(sizeof(struct node));
-    link->string = malloc(sizeof(char)*(strlen(str)+1));
+    if(str != NULL)
+        link->string = malloc(sizeof(char)*(strlen(str)+1));
     link->string = str;
 
     if(redo_head->head == NULL){
@@ -262,6 +270,39 @@ void insertLast(char* str){
     current = last;
 }
 
+void inserisci_in_testa(char* string){
+    struct node* link = malloc(sizeof(struct node));
+    link->ind = 1;
+    link->string = string;
+
+    if(head == NULL) {
+        last = link;
+    }
+    else{
+        head->prev = link;
+    }
+    link->next = head;
+    head = link;
+
+}
+
+void inserisci_dopo(char* string){
+    struct node* link = malloc(sizeof(struct node));
+    link->ind = current->ind + 1;
+    link->string = string;
+
+    if(current == last){
+        link->next = NULL;
+        last = link;
+    }
+    else{
+        link->next = current->next;
+        current->next->prev = link;
+    }
+
+    link->prev = current;
+    current->next = link;
+}
 
 void trova_el(int ind_to_find){
     if(current != NULL){
@@ -576,6 +617,37 @@ void undo(int n){
             //ripristina le stringhe
             //crea nodo in redo
             //sistema indirizzi
+            lista temp;
+            if(ind_to_undo == 1)
+                temp = head;
+            else{
+                trova_el(ind_to_undo-1);
+                temp = current;
+            }
+            for(; ind_to_undo < undo_head->command.ind2+1;ind_to_undo++) {
+                insertLast_redoNode(NULL);
+                if (ind_to_undo == 1) {
+
+                    inserisci_in_testa(undo_head->head->string);
+                } else {
+                    trova_el(ind_to_undo - 1);
+                    inserisci_dopo(undo_head->head->string);
+                }
+                if(undo_head->head->next != NULL)
+                    undo_head->head= undo_head->head->next;
+            }
+
+            while(temp != NULL){
+                printf("aggiorno indici\n");
+                if(temp->prev != NULL)
+                    temp->ind = temp->prev->ind +1;
+                else
+                    temp->ind = 1;
+                if(temp->next != NULL)
+                    temp = temp->next;
+                else
+                    break;
+            }
         }
         struct ur_node* temp = undo_head;
         undo_head = undo_head->next;
@@ -585,15 +657,26 @@ void undo(int n){
     }
 }
 
-//void redo(int n);
+void redo(int n){
 
+}
+void clean_redo(){
+    struct ur_node* temp = redo_head;
+    while(temp!= NULL){
+        temp = temp->next;
+        free(temp->prev);
+    }
+    redo_head = NULL;
+}
 void play1(c_d_p_command command){
     switch(command.action){
         case 'c':
+            clean_redo();
             insertFirst(command);
             change(command.ind1, command.ind2);
             break;
         case 'd':
+            clean_redo();
             insertFirst(command);
             delete(command.ind1, command.ind2);
             break;
@@ -605,7 +688,7 @@ void play1(c_d_p_command command){
 void play2(u_r_command command) {
     switch (command.action) {
         case 'r':
-            //redo(command.n);
+            redo(command.n);
             break;
         case 'u':
             insertFirst_redo();
