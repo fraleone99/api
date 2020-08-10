@@ -68,6 +68,9 @@ void displayForward() {
 
 void displayForward_undo(){
 
+    if(undo_head == NULL)
+        return;
+
     struct ur_node *ptr = undo_head;
     struct node *ptr1= ptr->head;
     //navigate till the end of the list
@@ -97,6 +100,8 @@ void displayForward_undo(){
 }
 
 void displayForward_redo(){
+    if(redo_head == NULL)
+        return;
 
     struct ur_node *ptr = redo_head;
     struct node *ptr1= ptr->head;
@@ -386,6 +391,7 @@ void print(int ind1, int ind2){
     printf("%d\n", current->ind);
     displayForward();
     displayForward_undo();
+    displayForward_redo();
     printf("esco da stampa\n");
 }
 void change(int ind1 ,int ind2){
@@ -540,7 +546,7 @@ void undo(int n){
         int ind_to_undo = undo_head->command.ind1;
         //printf("ind_to_undo %d, %d\n", ind_to_undo, undo_head->command.ind1);
         if (undo_head->command.action == 'c') {
-            for(; ind_to_undo <= undo_head->command.ind2+1;ind_to_undo++) {
+            for(; ind_to_undo < undo_head->command.ind2+1;ind_to_undo++) {
                 if (undo_head->head->string == NULL) {
                     printf("undo di un comando c per una stringa nuova\n");
                     trova_el(ind_to_undo);
@@ -554,20 +560,28 @@ void undo(int n){
                 } else {
                     //copia le stringhe in redo;
                     //sostituisci le stringhe con quelle salvate in undo
+                    trova_el(ind_to_undo);
                     insertLast_redoNode(current->string);
                     current->string = realloc(current->string, sizeof(char)*(strlen(undo_head->head->string)+1));
                     strcpy(current->string, undo_head->head->string);
+                    if(current->next == NULL)
+                        break;
+                    else
+                        current = current->next;
                 }
-                if(current == NULL)
-                    current = last;
+                if(undo_head->head->next != NULL)
+                    undo_head->head= undo_head->head->next;
             }
         } else if (undo_head->command.action == 'd'){
             //ripristina le stringhe
             //crea nodo in redo
             //sistema indirizzi
         }
+        struct ur_node* temp = undo_head;
         undo_head = undo_head->next;
-        insertFirst_redo();
+        free(temp);
+        if(undo_head != NULL)
+            insertFirst_redo();
     }
 }
 
