@@ -71,7 +71,7 @@ void displayForward_undo(){
     struct ur_node *ptr = undo_head;
     struct node *ptr1= ptr->head;
     //navigate till the end of the list
-    printf("\n[ ");
+    printf("\nundo queue[ ");
 
     while(ptr != NULL) {
         printf("(%d,%d%c)-> ",ptr->command.ind1,ptr->command.ind2, ptr->command.action);
@@ -101,7 +101,7 @@ void displayForward_redo(){
     struct ur_node *ptr = redo_head;
     struct node *ptr1= ptr->head;
     //navigate till the end of the list
-    printf("\n[ ");
+    printf("\nredo queue[ ");
 
     while(ptr != NULL) {
         printf("(%d,%d%c)-> ",ptr->command.ind1,ptr->command.ind2, ptr->command.action);
@@ -153,14 +153,13 @@ void insertFirst(c_d_p_command command){
 
 void insertFirst_redo(){
     printf("entro in insertFirst_redo\n");
-    if(redo_head != NULL) {
-        //printf("redo all'inizio di insert First:\n");
-        //displayForward_redo();
-    }
+
     //create a link
-    struct ur_node *link;
-    link = undo_head;
-    undo_head = undo_head->next;
+    struct ur_node *link = malloc(sizeof(struct ur_node));
+    link->command.ind1 = undo_head->command.ind1;
+    link->command.ind2 = undo_head->command.ind2;
+    link->command.action = undo_head->command.action;
+
 
     if(redo_head == NULL)
         redo_last = link;
@@ -170,10 +169,11 @@ void insertFirst_redo(){
 
     link->next = redo_head;
     redo_head = link;
+    redo_head->head = NULL;
 
     printf("Ho inserito il link: %d,%d%c\n",link->command.ind1,link->command.ind2,link->command.action);
     printf("undo alla fine di insert First:\n");
-    //displayForward_undo();
+    displayForward_undo();
 }
 
 void insertLast_undoNode(char* str){
@@ -202,17 +202,16 @@ void insertLast_undoNode(char* str){
     displayForward_undo();
 }
 
-void insertLast_redoNode(struct node* ptr){
+void insertLast_redoNode(char* str){
     printf("entro in insertLast_redoNode\n");
     //displayForward_redo();
     struct node* link = malloc(sizeof(struct node));
-    link->string = ptr->string;
-    lin
-    printf("bella\n");
-    redo_head->head = link;
+    link->string = malloc(sizeof(char)*(strlen(str)+1));
+    link->string = str;
+
     if(redo_head->head == NULL){
         printf("1\n");
-        link->ind = redo_head->command.ind1;
+        link->ind = undo_head->command.ind1;
         redo_head->head = link;
         redo_head->last = link;
     }
@@ -515,40 +514,59 @@ void delete(int ind1, int ind2){
 
 }
 
+void elimina_elemento(){//elimina elemento per undo
+    if(head == NULL)
+        return;
+    lista temp = current;
+    if(current == head){
+        head = head->next;
+    }
+    else{
+        current->prev->next = current->next;
+    }
+    if(current == last){
+        last = current->prev;
+    }
+    else{
+        current->next->prev = current->prev;
+    }
+    free(temp);
+}
+
 void undo(int n){
     printf("entro in undo\n");
+    for(;n!=0 && undo_head != NULL; n--) {
 
-    for(;n!=0; n--) {
-
+        int ind_to_undo = undo_head->command.ind1;
+        //printf("ind_to_undo %d, %d\n", ind_to_undo, undo_head->command.ind1);
         if (undo_head->command.action == 'c') {
-            if(undo_head->head->string == NULL)
-            {
-                printf("undo di un comando c per una stringa nuova\n");
-                int ind_to_undo = undo_head->command.ind1;
-                printf("test\n");
-                trova_el(ind_to_undo);
-                if(current->prev)
-                last = current->prev;
-                insertLast_redoNode(current);
-                for(; ind_to_undo <= undo_head->command.ind2+1;ind_to_undo++){
-                    //insertLast_redoNode(current);
-                    current = current->next;
-                    ind_to_undo++;
+            for(; ind_to_undo <= undo_head->command.ind2+1;ind_to_undo++) {
+                if (undo_head->head->string == NULL) {
+                    printf("undo di un comando c per una stringa nuova\n");
+                    trova_el(ind_to_undo);
+                    printf("undo dell'elemento: (%d, %s)\n", current->ind, current->string);
+                    insertLast_redoNode(current->string);
+                    elimina_elemento();
+                    if(current->next == NULL)
+                        break;
+                    else
+                        current = current->next;
+                } else {
+                    //copia le stringhe in redo;
+                    //sostituisci le stringhe con quelle salvate in undo
+                    insertLast_redoNode(current->string);
+                    current->string = realloc(current->string, sizeof(char)*(strlen(undo_head->head->string)+1));
+                    strcpy(current->string, undo_head->head->string);
                 }
-                printf("undo fatto\n");
-                current = &last;
-            }
-            else{
-                //copia le stringhe in redo;
-                //sostituisci le stringhe con quelle salvate in undo
-
+                if(current == NULL)
+                    current = last;
             }
         } else if (undo_head->command.action == 'd'){
             //ripristina le stringhe
             //crea nodo in redo
             //sistema indirizzi
         }
-
+        undo_head = undo_head->next;
         insertFirst_redo();
     }
 }
@@ -592,6 +610,7 @@ int main() {
     int command_size = 16;
     char command[command_size];
     current = NULL;
+
 
 
     fgets(command, command_size, stdin);
@@ -667,7 +686,7 @@ int main() {
         free(ptr);
         ptr = next;
     }
-    printf("%s", undo_head->next->head->string);
+
     printf("Adios amigos\n");
 
     return  0;
