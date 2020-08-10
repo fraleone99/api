@@ -29,7 +29,7 @@ struct node* head = NULL;
 
 //this link always point to last Link
 lista last = NULL;
-lista *current = NULL;
+lista current = NULL;
 
 
 
@@ -255,19 +255,19 @@ void insertLast(char* str){
 
     last = link;
     printf("Ho creato nuovo nodo %d , %s\n", link->ind, link->string);
-    current = &last;
+    current = last;
 }
 
 
 void trova_el(int ind_to_find){
     if(current != NULL){
-        while((*current)->ind != ind_to_find){
-            if((*current)->ind > ind_to_find){
-                (*current) = (*current)->prev;
+        while(current->ind != ind_to_find){
+            if(current->ind > ind_to_find){
+                current = current->prev;
             }
-            else if((*current)->ind < ind_to_find){
-                if((*current)->next != NULL)
-                    (*current) = (*current)->next;
+            else if(current->ind < ind_to_find){
+                if(current->next != NULL)
+                    current = current->next;
                 else
                     break;
             }
@@ -349,26 +349,26 @@ void print(int ind1, int ind2){
         }
         return;
     }
-    else if((*current) != NULL){
-        printf("current != NULL, ind:%d\n", (*current)->ind);
+    else if(current != NULL){
+        printf("current != NULL, ind:%d\n", current->ind);
     }
     trova_el(ind1);
 
-    while((*current)->next != NULL && (*current)->ind< ind2+1){
-        printf("%d, ", (*current)->ind);
-        fputs((*current)->string, stdout);
+    while(current->next != NULL && current->ind< ind2+1){
+        printf("%d, ", current->ind);
+        fputs(current->string, stdout);
         printf("\n");
         ind_to_print--;
         printf("da stampare:%d\n", ind_to_print);
-        printf("indirizzo current: %d\n", (*current)->ind);
-        (*current) = (*current)->next;
+        printf("indirizzo current: %d\n", current->ind);
+        current = current->next;
     }
 
-    if((*current)->next == NULL) {
-        if((*current)->ind <= ind2){
+    if(current->next == NULL) {
+        if(current->ind <= ind2){
             printf("Devo fare un'ultima stampa\n");
-            //printf("%d, ", (*current)->ind);
-            fputs((*current)->string, stdout);
+            //printf("%d, ", current->ind);
+            fputs(current->string, stdout);
             printf("\n");
             ind_to_print--;
         }
@@ -377,14 +377,14 @@ void print(int ind1, int ind2){
         }
         if(last == NULL) {
             printf("last = NULL\n");
-            current = &head;
+            current = head;
             printf("Ho riassegnato current");
         }
 
 
     }
 
-    printf("%d\n", (*current)->ind);
+    printf("%d\n", current->ind);
     displayForward();
     displayForward_undo();
     printf("esco da stampa\n");
@@ -408,7 +408,7 @@ void change(int ind1 ,int ind2){
         printf("current != NULL\n");
     }
     trova_el(ind_to_change);
-    printf("\n ind1 trovato: %d", (*current)->ind);
+    printf("\n ind1 trovato: %d", current->ind);
 
     for(ind_to_change; ind_to_change <= ind2+1; ind_to_change++) {
         printf("\nentro for, ind_to_change %d\n", ind_to_change);
@@ -416,20 +416,20 @@ void change(int ind1 ,int ind2){
         new_line_remover(str);
         if(strncmp(str, ".", 1) != 0) {
 
-            if ((*current)->ind == ind_to_change) {
+            if (current->ind == ind_to_change) {
                 printf("\nentro else if\n"); //modifico una stringa già esistente;
                 if (strncmp(str, ".", 1) != 0) {
                     //undo_op
-                    insertLast_undoNode((*current)->string);
+                    insertLast_undoNode(current->string);
                     //
 
-                    (*current)->string = malloc((sizeof(char))*(strlen(str)+1));
-                    strcpy((*current)->string, str);
-                    if((*current)->next != NULL)
-                        (*current) = (*current)->next;
+                    current->string = malloc((sizeof(char))*(strlen(str)+1));
+                    strcpy(current->string, str);
+                    if(current->next != NULL)
+                        current = current->next;
                 }
             }
-            else if ((*current)->next == NULL && (*current)->ind != ind2) {      //creo una nuova stringa
+            else if (current->next == NULL && current->ind != ind2) {      //creo una nuova stringa
                 printf("\nentro if\n");
                 if (strncmp(str, ".", 1) != 0) {
                     insertLast(str);
@@ -447,31 +447,31 @@ void change(int ind1 ,int ind2){
 void elem_delete(){
     printf("entro in elem delete\n");
 
-    if((*current) == NULL)
+    if(current == NULL)
         return;
 
-    insertLast_undoNode((*current)->string);
-    lista* temp1 = current;
-    if((*current)->prev != NULL){
+    insertLast_undoNode(current->string);
+    lista temp1 = current;
+    if(current->prev != NULL){
         printf("1\n");
-        printf("current prev ind %d\n", (*current)->prev->ind );
-        (*current)->prev->next  = (*current)->next;
+        printf("current prev ind %d\n", current->prev->ind );
+        current->prev->next  = current->next;
     }
     else {
         printf("2\n");
-        head = (*current)->next;
+        head = current->next;
     }
-    if((*current)->next != NULL) {
+    if(current->next != NULL) {
         printf("3\n");
-        (*current)->next->prev = (*current)->prev;
+        current->next->prev = current->prev;
     }
     else{
         printf("4\n");
-        last = (*current)->prev;
+        last = current->prev;
     }
-    if((*temp1)!= NULL) {
-        //free((*temp1)->string);
-        free((*temp1));
+    if((temp1)!= NULL) {
+        //free((temp1)->string);
+        free((temp1));
     }
     printf("esco da elem delete\n");
 }
@@ -483,32 +483,32 @@ void delete(int ind1, int ind2){
         return;
     }
     trova_el(ind1);
-    lista* temp;
+    lista temp;
     if(ind1 != 1)
         temp = current;
     else
-        temp = &head;
+        temp = head;
 
 
     for(int i = ind1; i != ind2+1; i++) {
         printf("elimino %d\n", i);
-        printf("current ind %d\n", (*current)->ind );
+        printf("current ind %d\n", current->ind );
         elem_delete();
-        if((*current) == NULL)
+        if(current == NULL)
             break;
-        if((*current)->next != NULL)
-            (*current) = (*current)->next;
+        if(current->next != NULL)
+            current = current->next;
         else
             break;
     }
-    while((*temp) != NULL){
+    while(temp != NULL){
         printf("aggiorno indici\n");
-        if((*temp)->prev != NULL)
-            (*temp)->ind = (*temp)->prev->ind +1;
+        if(temp->prev != NULL)
+            temp->ind = temp->prev->ind +1;
         else
-            (*temp)->ind = 1;
-        if((*temp)->next != NULL)
-            *temp = (*temp)->next;
+            temp->ind = 1;
+        if(temp->next != NULL)
+            temp = temp->next;
         else
             break;
     }
@@ -527,12 +527,12 @@ void undo(int n){
                 int ind_to_undo = undo_head->command.ind1;
                 printf("test\n");
                 trova_el(ind_to_undo);
-                if((*current)->prev)
-                last = (*current)->prev;
-                insertLast_redoNode((*current));
+                if(current->prev)
+                last = current->prev;
+                insertLast_redoNode(current);
                 for(; ind_to_undo <= undo_head->command.ind2+1;ind_to_undo++){
-                    //insertLast_redoNode((*current));
-                    *current = (*current)->next;
+                    //insertLast_redoNode(current);
+                    current = current->next;
                     ind_to_undo++;
                 }
                 printf("undo fatto\n");
