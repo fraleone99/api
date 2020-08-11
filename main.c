@@ -56,7 +56,7 @@ void displayForward() {
     struct node *ptr = head;
 
     //navigate till the end of the list
-    printf("\n[ ");
+    printf("\nMain list[ ");
 
     while(ptr != NULL) {
         printf("(%d,%s) ",ptr->ind,ptr->string);
@@ -144,10 +144,12 @@ void insertFirst(c_d_p_command command){
     struct ur_node *link = (struct ur_node*) malloc(sizeof(struct ur_node));
     link->command = command;
     if(command.action == 'd'){
-        if(command.ind1 > last->ind)
-            return;
-        if(command.ind2 >last->ind)
-            link->command.ind2 = last->ind;
+        if(last != NULL) {
+            if (command.ind1 > last->ind)
+                return;
+            if (command.ind2 > last->ind)
+                link->command.ind2 = last->ind;
+        }
     }
     if(undo_head == NULL)
         undo_last = link;
@@ -305,7 +307,12 @@ void inserisci_dopo(char* string){
 }
 
 void trova_el(int ind_to_find){
+    if(head == NULL)
+        current = NULL;
     if(current != NULL){
+        displayForward();
+        printf("current ind:%d\n", current->ind);
+
         while(current->ind != ind_to_find){
             if(current->ind > ind_to_find){
                 current = current->prev;
@@ -330,7 +337,8 @@ void new_line_remover(char* str){
 }
 c_d_p_command interpreta_comando1(char* command){ //interpreta comandi c,d,p
     c_d_p_command current_command;
-
+    printf("interpretando un comando del tipo c d p \n");
+    printf("%s", command);
     //ind1
     char* token;
     token = strtok(command, ",");
@@ -347,6 +355,7 @@ c_d_p_command interpreta_comando1(char* command){ //interpreta comandi c,d,p
 }
 u_r_command interpreta_comando2(char* command){
     u_r_command current_command;
+    printf("interpretando un comando del tipo u r\n");
     char str[4];
     strncpy(str, command, strlen(command)-1);
     current_command.n = atoi(str);
@@ -592,7 +601,7 @@ void undo(int n){
                     printf("undo di un comando c per una stringa nuova\n");
                     trova_el(ind_to_undo);
                     printf("undo dell'elemento: (%d, %s)\n", current->ind, current->string);
-                    insertLast_redoNode(current->string);
+                    insertLast_redoNode(NULL);
                     elimina_elemento();
                     if(current->next == NULL)
                         break;
@@ -625,7 +634,7 @@ void undo(int n){
                 temp = current;
             }
             for(; ind_to_undo < undo_head->command.ind2+1;ind_to_undo++) {
-                insertLast_redoNode(NULL);
+                insertLast_redoNode(current->next->string);
                 if (ind_to_undo == 1) {
 
                     inserisci_in_testa(undo_head->head->string);
@@ -652,21 +661,77 @@ void undo(int n){
         struct ur_node* temp = undo_head;
         undo_head = undo_head->next;
         free(temp);
-        if(undo_head != NULL)
+        if(undo_head != NULL && n != 1)
             insertFirst_redo();
     }
 }
 
 void redo(int n){
+    printf("entro in redo\n");
+    displayForward_redo();
+    //redo_head = redo_head->next;
+    for(;n!=0 && redo_head != NULL; n--) {
+        printf("entro in redo\n");
+        if(redo_head->head == NULL)
+            printf("testa NULL\n");
+        printf("redo_head->head->string %s\n", redo_head->head->string);
+        int ind_to_redo = redo_head->command.ind1;
+        for(; ind_to_redo < redo_head->command.ind2+1;ind_to_redo++) {
+            if (redo_head->head->string == NULL) {
+                displayForward();
+                printf("redo di una stringa eliminata\n");
 
+                trova_el(ind_to_redo);
+                elimina_elemento();
+                printf("elemento eliminato\n");
+                if(current == NULL) {
+                    current = head;
+                    break;
+                }
+                else
+                    current = current->next;
+            }
+            else {
+               // sostituisci la
+                //                stringa corrispondente
+                printf("redo di una stringa modificata\n");
+                trova_el(ind_to_redo);
+                if(current != NULL)
+                    current->string = realloc(current->string, sizeof(char)*(strlen(redo_head->head->string)+1));
+
+
+                strcpy(current->string, redo_head->head->string);
+                if(current->next == NULL)
+                    break;
+                else
+                    current = current->next;
+
+            }
+            if(redo_head->head->next != NULL)
+                redo_head->head= redo_head->head->next;
+        }
+        struct ur_node *temp = redo_head;
+        redo_head = redo_head->next;
+        free(temp);
+    }
+    printf("ESCO DA REDO\n");
+    displayForward();
 }
 void clean_redo(){
+    printf("pulisco redo\n");
     struct ur_node* temp = redo_head;
     while(temp!= NULL){
+        struct node* temp1 = temp->head;
         temp = temp->next;
+        while(temp1 != NULL){
+            temp1 = temp1->next;
+            free(temp1->prev);
+        }
         free(temp->prev);
     }
     redo_head = NULL;
+    printf("redo pulito\n");
+    displayForward_redo();
 }
 void play1(c_d_p_command command){
     switch(command.action){
@@ -714,6 +779,7 @@ int main() {
     while(1) {
 
         if (type_of_command(command) == 1) {
+            //printf("prova1\n")
             c_d_p_command comandx = interpreta_comando1(command);
             printf("Comandox: %d,%d,%c\n", comandx.ind1, comandx.ind2, comandx.action);
             play1(comandx);
@@ -723,13 +789,18 @@ int main() {
         else if (type_of_command(command) == 0) {
             char next_command[command_size];
             u_r_command comandy = interpreta_comando2(command);
+            printf("Comandoy: %d,%c\n", comandy.n,comandy.action);
             n = comandy.n;
+            int flag = 0;
+            if(comandy.action == 'u')
+                flag = 1;
 
             fgets(next_command, command_size, stdin);
 
-            while(type_of_command(next_command) == 0) {
-                u_r_command commandz = interpreta_comando2(next_command);
-                n += commandz.n;
+            while(type_of_command(next_command) == 0 && flag == 1) {
+                u_r_command comandz = interpreta_comando2(next_command);
+                printf("Comandoz: %d,%c\n", comandz.n,comandz.action);
+                n += comandz.n;
                 printf("\nsto sommando a n: %d\n", n);
                 fgets(next_command, command_size, stdin);
             }
@@ -759,10 +830,11 @@ int main() {
             if(type_of_command(next_command) == 2) {
                 break;
             }
-
-            c_d_p_command comandj = interpreta_comando1(next_command);
-            printf("Comandoj: %d,%d,%c\n", comandj.ind1, comandj.ind2, comandj.action);
-            play1(comandj);
+            if(type_of_command(command) == 1) {
+                c_d_p_command comandj = interpreta_comando1(next_command);
+                printf("Comandoj: %d,%d,%c\n", comandj.ind1, comandj.ind2, comandj.action);
+                play1(comandj);
+            }
 
 
         }
