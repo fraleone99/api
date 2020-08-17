@@ -325,6 +325,18 @@ void trova_el(int ind_to_find){
         }
         displayForward();
         printf("current ind:%d\n", current->ind);
+        int dist_from_current;
+        int dist_from_head;
+        int dist_from_last;
+
+        dist_from_current = abs(current->ind - ind_to_find);
+        dist_from_head = abs(head->ind - ind_to_find);
+        dist_from_last = abs(last->ind - ind_to_find);
+
+        if(dist_from_last< dist_from_current && dist_from_last<dist_from_head)
+            current = last;
+        else if(dist_from_head< dist_from_current && dist_from_head<dist_from_last)
+            current = head;
 
         while(current->ind != ind_to_find){
             if(current->ind > ind_to_find){
@@ -620,29 +632,23 @@ void undo(int n){
         if (undo_head->command.action == 'c') {
             for(; ind_to_undo < undo_head->command.ind2+1;ind_to_undo++) {
 
-                displayForward();
                 //printf("current = %d", current->ind);
                 if (undo_head->head->string == NULL) {
                     printf("undo di un comando c per una stringa nuova\n");
-                    displayForward();
                     trova_el(ind_to_undo);
                     printf("undo dell'elemento: (%d, %s)\n", current->ind, current->string);
-                    displayForward();
                     insertLast_redoNode(current->string);
-                    displayForward_redo();
                     elimina_elemento();
                     if(current == NULL)
-                        break;
+                        continue;
                     else
                         current = current->next;
                 } else {
                     //copia le stringhe in redo;
                     //sostituisci le stringhe con quelle salvate in undo
                     trova_el(ind_to_undo);
-                    displayForward();
                     insertLast_redoNode(current->string);
                     printf("ho aggiunto %d,%s", current->ind, current->string);
-                    displayForward_redo();
                     current->string = malloc(sizeof(char) * (strlen(undo_head->head->string) + 1));
                     strcpy(current->string, undo_head->head->string);
 
@@ -682,21 +688,18 @@ void undo(int n){
 
                     if (current == NULL || current->next == NULL) {
                         printf("current = NULL\n");
-                        displayForward();
                         insertLast_redoNode(NULL);
                         printf("aggiungo nodo NULL a redo\n");
-                        displayForward_redo();
                         if (ind_to_undo == 1) {
+                            printf("aggiungo in testa %s",  undo_head->head->string);
                             inserisci_in_testa(undo_head->head->string);
                         }
                         else{
+                            printf("aggiungo in coda %s", undo_head->head->string);
                             insertLast(undo_head->head->string);
                         }
                     } else {
                         printf("aggiungo nodo %d,%s a redo\n", current->next->ind, current->next->string);
-                        displayForward_redo();
-                        displayForward();
-
                         insertLast_redoNode(current->next->string);
                         if (ind_to_undo == 1) {
                             inserisci_in_testa(undo_head->head->string);
@@ -743,11 +746,16 @@ void redo(int n){
     for(;n!=0 && redo_head != NULL; n--) {
         printf("entro in redo, redo to do:%d\n", n);
         displayForward();
-        //displayForward_undo();
+        displayForward_undo();
         displayForward_redo();
 
-        if(redo_head->command.action == 'n'){//caso in cui l'undo non ha fatto niente
+        if(redo_head->command.action == 'n'){
+            //caso in cui l'undo non ha fatto niente
+            struct ur_node* temp = redo_head;
             redo_head = redo_head->next;
+            free(temp);
+            if(redo_head != NULL && n > 1)
+                insertFirst(redo_head->command);
             continue;
         }
 
@@ -778,8 +786,7 @@ void redo(int n){
 
                 }
                 if(current == NULL) {
-                    current = head;
-                    break;
+                    continue;
                 }
                 else
                     current = current->next;
@@ -826,7 +833,7 @@ void redo(int n){
         struct ur_node *temp = redo_head;
         redo_head = redo_head->next;
         free(temp);
-        if(redo_head != NULL && n != 1)
+        if(redo_head != NULL && n > 1)
             insertFirst(redo_head->command);
         displayForward();
         displayForward_redo();
@@ -837,22 +844,32 @@ void redo(int n){
     if(current == NULL)
         current = head;
 }
+
+void clean_list(){
+    struct node* tmp;
+
+    while(redo_head->head != NULL) {
+        tmp = redo_head->head;
+        redo_head->head = redo_head->head->next;
+        free(tmp);
+    }
+
+}
+
 void clean_redo(){
     printf("pulisco redo\n");
-    struct ur_node* temp = redo_head;
-    while(temp!= NULL){
-        struct node* temp1 = temp->head;
-        temp = temp->next;
-        while(temp1 != NULL){
-            temp1 = temp1->next;
-            free(temp1->prev);
-        }
-        free(temp->prev);
+    struct ur_node* temp;
+    while(redo_head != NULL){
+        temp = redo_head;
+        //clean_list();
+        redo_head = redo_head->next;
+        free(temp);
     }
-    redo_head = NULL;
     printf("redo pulito\n");
     displayForward_redo();
 }
+
+
 void play1(c_d_p_command command){
     switch(command.action){
         case 'c':
@@ -878,7 +895,7 @@ void play2(u_r_command command) {
             redo(command.n);
             break;
         case 'u':
-            if(command.n != 0) {
+            if(command.n != 0 && undo_head != NULL) {
                 printf("potess\n");
                 insertFirst_redo();
             }
