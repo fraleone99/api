@@ -2,3 +2,7 @@
 ### Editors ###
 # Clion
 .idea/*
+cmake-build-debug
+CMakeLists.txt
+misc.xml
+api.iml
