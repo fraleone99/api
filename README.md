@@ -5,7 +5,7 @@ Text editor with redo and undo functionality.
 
 * (ind1, ind2)c : Changes the text from ind1 to ind2. 
 * (ind1, ind2)d : Deletes the text from ind1 to ind2.
-* (ind1, ind2)p : Prints the thext from ind1 to ind2.
+* (ind1, ind2)p : Prints the text from ind1 to ind2.
 * (num)u : Performs undo action of the commands d and c.
 * (num)r : Performs redo action.
 * q : quit
